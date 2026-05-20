@@ -33,7 +33,7 @@ class DAO:
         result = []
 
         query = """
-                select distinct(a.ArtistId), a.Name
+                select distinct a.ArtistId, a.Name
                 from artist a, album al, track t 
                 where a.ArtistId = al.ArtistId and al.AlbumId = t.AlbumId and t.GenreId = %s
         """
@@ -71,20 +71,20 @@ class DAO:
         return result
 
     @staticmethod
-    def getArtistiWPopularity():
+    def getArtistiWPopularityByGenre(genre_id):
         conn = DBConnect.get_connection()
         cursor = conn.cursor(dictionary=True)
 
         result = []
 
         query = """
-                select a.ArtistId, count(distinct t.TrackId) as Popularity
+                select a.ArtistId, sum(i.Quantity) as Popularity
                 from album a, track t, invoiceline i 
-                where a.AlbumId = t.AlbumId and t.TrackId = i.TrackId 
+                where a.AlbumId = t.AlbumId and t.TrackId = i.TrackId and t.GenreId = %s
                 group by a.ArtistId 
                 """
 
-        cursor.execute(query)
+        cursor.execute(query, (genre_id,))
 
         for row in cursor:
             result.append((row["ArtistId"], row["Popularity"]))
@@ -92,3 +92,51 @@ class DAO:
         cursor.close()
         conn.close()
         return result
+
+    # @staticmethod
+    # def getAllArtists():
+    #     conn = DBConnect.get_connection()
+    #     cursor = conn.cursor(dictionary=True)
+    #
+    #     result = []
+    #
+    #     query = """
+    #             select *
+    #             from artist
+    #             """
+    #
+    #     cursor.execute(query)
+    #
+    #     for row in cursor:
+    #         result.append(Artist(**row))
+    #
+    #     cursor.close()
+    #     conn.close()
+    #     return result
+    #
+    # @staticmethod
+    # def getAllEdges(genre_id, idMapArtist):
+    #     conn = DBConnect.get_connection()
+    #     cursor = conn.cursor(dictionary=True)
+    #
+    #     result = []
+    #
+    #     query = """
+    #             SELECT DISTINCT al1.ArtistId AS id1, al2.ArtistId AS id2
+    #             FROM album al1, track t1, invoiceline il1, invoice i1,
+    #                  album al2, track t2, invoiceline il2, invoice i2
+    #             WHERE al1.AlbumId = t1.AlbumId AND t1.TrackId = il1.TrackId AND il1.InvoiceId = i1.InvoiceId
+    #               AND al2.AlbumId = t2.AlbumId AND t2.TrackId = il2.TrackId AND il2.InvoiceId = i2.InvoiceId
+    #               AND i1.CustomerId = i2.CustomerId
+    #               AND t1.GenreId = %s AND t2.GenreId = %s
+    #               AND al1.ArtistId <> al2.ArtistId
+    #             """
+    #
+    #     cursor.execute(query, (genre_id, genre_id))
+    #
+    #     for row in cursor:
+    #         result.append((idMapArtist.get(row["id1"]), idMapArtist.get(row["id2"])))
+    #
+    #     cursor.close()
+    #     conn.close()
+    #     return result
